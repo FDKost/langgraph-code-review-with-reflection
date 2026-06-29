@@ -1,45 +1,86 @@
-# LangGraph Code Review with Reflection
+# LangGraph Code Review
 
-This project demonstrates a simple code review workflow using **LangGraph** and **LangChain**.  
+A lightweight tool that uses **LangGraph** and **LangChain** to perform an automated code review.  
 The workflow:
 
-1. **Draft Review** – Generates an initial review of a Python function.  
-2. **Reflect** – A critic scores the review on four criteria.  
-3. **Rewrite** – If the review is not satisfactory, the weakest part is rewritten.  
+1. **Draft Review** – An LLM generates an initial review of the supplied code.  
+2. **Reflect** – The LLM scores the review on four criteria (PEP8, type hints, edge cases, naming).  
+3. **Rewrite** – If the review is not satisfactory, the LLM rewrites the weakest part of the review.  
 4. The process repeats until the review passes or the maximum number of rounds is reached.
 
 ## Features
 
-- **Typed state** with `CodeReviewState` (TypedDict).  
-- **Structured output parsing** for critic responses.  
-- **Conditional graph flow** with a maximum of 2 rewrite rounds.  
-- **CLI demo** with a sample `sort_numbers` function.
+- Uses the latest LangChain and LangGraph APIs.  
+- Supports OpenAI models via `langchain-openai`.  
+- CLI powered by Typer.  
+- Structured output for easy parsing.  
 
-## Requirements
-
-- Python 3.10+
-- OpenAI API key (set as `OPENAI_API_KEY` environment variable)
-
-Install dependencies:
+## Installation
 
 ```bash
+# Create a virtual environment
+python -m venv .venv
+source .venv/bin/activate   # On Windows use `.venv\Scripts\activate`
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-## Running the Demo
+## Usage
 
 ```bash
-export OPENAI_API_KEY="your-openai-key"
-python main.py
+# Run the demo on a sample file
+python -m src.main review --file sample.py
 ```
 
-You should see the final review, scores, weakest criterion, verdict, and the number of rounds completed.
+### Sample `sample.py`
 
-## Customizing
+```python
+def sort_numbers(numbers: list[int]) -> list[int]:
+    """Sort a list of numbers in ascending order."""
+    return sorted(numbers)
+```
 
-- **Change the sample function**: Edit the `sample_code` string in `main.py`.  
-- **Adjust max rounds**: Modify `max_rounds` in the initial state.  
-- **Use a different LLM**: Replace the `ChatOpenAI` model name.
+### Expected Output
+
+```
+=== Draft Review ===
+- The function name is clear but could be more descriptive.
+- The type hints are missing for the return value.
+- No edge case handling for empty lists.
+- PEP8 compliance is good.
+
+=== Reflection ===
+pep8: 9
+type_hints: 5
+edge_cases: 4
+naming: 8
+weakest_criterion: edge_cases
+verdict: needs_revision
+
+=== Rewritten Review ===
+- The function name is clear but could be more descriptive.
+- The type hints are missing for the return value.
+- The function should handle empty lists gracefully.
+- PEP8 compliance is good.
+```
+
+## Project Structure
+
+```
+src/
+├── main.py          # CLI entry point
+├── graph.py         # LangGraph definition
+├── nodes.py         # Node implementations
+├── types.py         # TypedDict for state
+└── __init__.py
+```
+
+## Extending
+
+- Replace the OpenAI model with another provider by editing `src/nodes.py`.  
+- Add more criteria to the reflection step by updating the prompt and parser.  
+- Adjust `max_rounds` via the CLI option.
 
 ## License
 
