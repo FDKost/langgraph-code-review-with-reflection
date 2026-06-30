@@ -4,7 +4,6 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 from langchain.chains import LLMChain
-from langgraph.prebuilt import create_react_agent
 from src.types import CodeReviewState
 
 # Initialize LLM
