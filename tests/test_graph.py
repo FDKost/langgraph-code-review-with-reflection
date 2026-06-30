@@ -1,64 +1,116 @@
+import sys
+import os
 import pytest
-from unittest.mock import patch
 
-from code_review.graph import (
-    CodeReviewState,
-    build_graph,
-    _score_review,
-    _determine_verdict,
-    _weakest_criterion,
-)
+# Ensure the src directory is importable
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-# Mock LLM responses for deterministic tests
+from code_review import graph
+
+# Dummy LLM response object
+class DummyResponse:
+    def __init__(self, content: str):
+        self.content = content
+
 @pytest.fixture
-def mock_llm():
-    with patch("code_review.graph.llm.invoke") as mock:
-        # Return a simple review string
-        mock.return_value.content = "Mock review content"
-        yield mock
+def dummy_review():
+    return "• Point 1\n• Point 2\n• Point 3"
 
-def test_score_review_parsing():
-    # Simulate a JSON string response
-    with patch("code_review.graph.llm.invoke") as mock:
-        mock.return_value.content = """
-{
-  "clarity": 4,
-  "correctness": 5,
-  "style": 3,
-  "completeness": 4
-}
-"""
-        scores = _score_review("dummy")
-        assert scores == {"clarity": 4, "correctness": 5, "style": 3, "completeness": 4}
+@pytest.fixture
+def dummy_scores():
+    return {"pep8": 8, "type_hints": 9, "edge_cases": 7, "naming": 8}
 
-def test_determine_verdict():
-    assert _determine_verdict({"clarity": 4, "correctness": 5, "style": 3, "completeness": 4}) == "ok"
-    assert _determine_verdict({"clarity": 2, "correctness": 5, "style": 3, "completeness": 4}) == "needs_revision"
+@pytest.fixture
+def dummy_scores_needs_revision():
+    return {"pep8": 5, "type_hints": 6, "edge_cases": 4, "naming": 7}
 
-def test_weakest_criterion():
-    assert _weakest_criterion({"clarity": 4, "correctness": 5, "style": 3, "completeness": 4}) == "style"
+def test_state_initialization():
+    state = {
+        "code": "def foo(): pass",
+        "draft_review": "",
+        "criteria_scores": {},
+        "weakest_criterion": "",
+        "verdict": "",
+        "round": 1,
+        "max_rounds": 2,
+    }
+    assert state["code"] == "def foo(): pass"
+    assert state["round"] == 1
+    assert state["max_rounds"] == 2
 
-def test_reflect_node_returns_verdict_only(mock_llm):
-    state = CodeReviewState(code="def f(): pass")
-    # Mock scores to trigger needs_revision
-    with patch("code_review.graph._score_review") as mock_score:
-        mock_score.return_value = {"clarity": 2, "correctness": 5, "style": 3, "completeness": 4}
-        result = build_graph().invoke(state)
-        # After graph execution, verdict should be "needs_revision"
-        assert result["verdict"] == "needs_revision"
-        # The state should contain weakest_criterion
-        assert result["weakest_criterion"] == "clarity"
+def test_draft_review_node(monkeypatch, dummy_review):
+    monkeypatch.setattr(graph.llm, "invoke", lambda prompt: DummyResponse(dummy_review))
+    state = {
+        "code": "def foo(): pass",
+        "draft_review": "",
+        "criteria_scores": {},
+        "weakest_criterion": "",
+        "verdict": "",
+        "round": 1,
+        "max_rounds": 2,
+    }
+    graph.draft_review_node(state)
+    assert state["draft_review"] == dummy_review
 
-def test_graph_flow_rewrite():
-    state = CodeReviewState(code="def f(): pass")
-    # Mock the LLM to produce a review that needs revision
-    with patch("code_review.graph.llm.invoke") as mock_llm:
-        # First draft review
-        mock_llm.return_value.content = "Draft review content"
-        # Run graph
-        final_state = build_graph().invoke(state)
-        # Since the mock scores are default 3, verdict will be ok
-        assert final_state["verdict"] == "ok"
+def test_reflect_node(monkeypatch, dummy_scores_needs_revision):
+    monkeypatch.setattr(graph, "_score_review", lambda review: dummy_scores_needs_revision)
+    state = {
+        "code": "def foo(): pass",
+        "draft_review": "• Point 1\n• Point 2",
+        "criteria_scores": {},
+        "weakest_criterion": "",
+        "verdict": "",
+        "round": 1,
+        "max_rounds": 2,
+    }
+    graph.reflect_node(state)
+    assert state["criteria_scores"] == dummy_scores_needs_revision
+    assert state["weakest_criterion"] == "edge_cases"
+    assert state["verdict"] == "needs_revision"
 
-if __name__ == "__main__":
-    pytest.main()
+def test_rewrite_node(monkeypatch, dummy_review):
+    monkeypatch.setattr(graph.llm, "invoke", lambda prompt: DummyResponse(dummy_review))
+    state = {
+        "code": "def foo(): pass",
+        "draft_review": "• Old point",
+        "criteria_scores": {},
+        "weakest_criterion": "edge_cases",
+        "verdict": "needs_revision",
+        "round": 1,
+        "max_rounds": 2,
+    }
+    graph.rewrite_node(state)
+    assert state["draft_review"] == dummy_review
+    assert state["round"] == 2
+
+def test_graph_termination(monkeypatch):
+    # Mock LLM responses for draft and rewrite
+    dummy_review_text = "• Point 1\n• Point 2"
+    monkeypatch.setattr(graph.llm, "invoke", lambda prompt: DummyResponse(dummy_review_text))
+
+    # Mock scoring: first round needs_revision, second round ok
+    def mock_score(review: str):
+        if graph_state["round"] == 1:
+            return {"pep8": 5, "type_hints": 6, "edge_cases": 4, "naming": 7}
+        else:
+            return {"pep8": 8, "type_hints": 9, "edge_cases": 7, "naming": 8}
+
+    monkeypatch.setattr(graph, "_score_review", mock_score)
+
+    # Initialize state
+    graph_state = {
+        "code": "def foo(): pass",
+        "draft_review": "",
+        "criteria_scores": {},
+        "weakest_criterion": "",
+        "verdict": "",
+        "round": 1,
+        "max_rounds": 2,
+    }
+
+    graph_obj = graph.build_graph()
+    final_state = graph_obj.invoke(graph_state)
+
+    assert final_state["verdict"] == "ok"
+    assert final_state["round"] == 2
+    assert final_state["draft_review"] == dummy_review_text

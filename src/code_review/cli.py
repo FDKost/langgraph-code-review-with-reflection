@@ -5,11 +5,16 @@ from .graph import CodeReviewState, build_graph
 
 app = typer.Typer(help="LangGraph Code Review Agent")
 
+
 @app.command()
 def run(
     code: Optional[str] = typer.Option(
         None,
         help="Python code snippet to review. If omitted, a sample function is used.",
+    ),
+    max_rounds: int = typer.Option(
+        2,
+        help="Maximum number of rewrite attempts allowed.",
     ),
 ):
     """
@@ -21,7 +26,17 @@ def run(
     if code is None:
         code = sample_code
 
-    state = CodeReviewState(code=code)
+    # Initialize state with defaults
+    state: CodeReviewState = {
+        "code": code,
+        "draft_review": "",
+        "criteria_scores": {},
+        "weakest_criterion": "",
+        "verdict": "",
+        "round": 1,
+        "max_rounds": max_rounds,
+    }
+
     graph = build_graph()
     # Run the graph
     final_state = graph.invoke(state)
@@ -36,6 +51,13 @@ def run(
     else:
         typer.echo("\nRewritten review:")
         typer.echo(final_state["draft_review"])
+
+    # Optionally display scores
+    if final_state["criteria_scores"]:
+        typer.echo("\nScores:")
+        for k, v in final_state["criteria_scores"].items():
+            typer.echo(f"  {k}: {v}")
+
 
 if __name__ == "__main__":
     app()
