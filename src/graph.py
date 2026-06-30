@@ -13,9 +13,9 @@ def build_graph() -> StateGraph[CodeReviewState]:
     graph.add_edge("draft_review", "reflect")
 
     def condition(state: CodeReviewState):
-        verdict = state["reflection"]["verdict"]
-        round_ = state["round"]
-        max_rounds = state["max_rounds"]
+        verdict = state.get("verdict")
+        round_ = state.get("round", 0)
+        max_rounds = state.get("max_rounds", 2)
         if verdict == "needs_revision" and round_ < max_rounds:
             return "rewrite"
         return "__end__"

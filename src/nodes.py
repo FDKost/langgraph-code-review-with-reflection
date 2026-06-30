@@ -3,7 +3,7 @@ from typing import Dict, Any
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
-from langchain.chains import LLMChain
+from langgraph import node
 from src.types import CodeReviewState
 
 # Initialize LLM
@@ -19,8 +19,6 @@ draft_prompt = PromptTemplate(
         "Review:"
     ),
 )
-
-draft_chain = LLMChain(llm=llm, prompt=draft_prompt)
 
 # Reflect prompt with JSON output
 scores_schema = [
@@ -44,8 +42,6 @@ reflect_prompt = PromptTemplate(
     ).format(format_instructions=reflect_parser.get_format_instructions()),
 )
 
-reflect_chain = LLMChain(llm=llm, prompt=reflect_prompt, output_parser=reflect_parser)
-
 # Rewrite prompt
 rewrite_prompt = PromptTemplate(
     input_variables=["review", "weakest_criterion"],
@@ -57,28 +53,42 @@ rewrite_prompt = PromptTemplate(
     ),
 )
 
-rewrite_chain = LLMChain(llm=llm, prompt=rewrite_prompt)
+# Chains
+draft_chain = llm | draft_prompt
+reflect_chain = llm | reflect_prompt | reflect_parser
+rewrite_chain = llm | rewrite_prompt
 
+@node
 def draft_review(state: CodeReviewState) -> CodeReviewState:
     code = state["code"]
-    review = draft_chain.run({"code": code})
+    review = draft_chain.invoke({"code": code})["output"]
     state["draft_review"] = review.strip()
     state["round"] = 1
     state.setdefault("max_rounds", 2)
     return state
 
+@node
 def reflect(state: CodeReviewState) -> CodeReviewState:
     review = state.get("draft_review") or state.get("rewritten_review")
     if not review:
         raise ValueError("No review to reflect on.")
-    reflection = reflect_chain.run({"review": review})
-    state["reflection"] = reflection
+    reflection = reflect_chain.invoke({"review": review})["output"]
+    # Convert scores to int
+    state["criteria_scores"] = {
+        "pep8": int(reflection["pep8"]),
+        "type_hints": int(reflection["type_hints"]),
+        "edge_cases": int(reflection["edge_cases"]),
+        "naming": int(reflection["naming"]),
+    }
+    state["weakest_criterion"] = reflection["weakest_criterion"]
+    state["verdict"] = reflection["verdict"]
     return state
 
+@node
 def rewrite(state: CodeReviewState) -> CodeReviewState:
     review = state.get("draft_review") or state.get("rewritten_review")
-    weakest = state["reflection"]["weakest_criterion"]
-    rewritten = rewrite_chain.run({"review": review, "weakest_criterion": weakest})
-    state["rewritten_review"] = rewritten.strip()
+    weakest = state["weakest_criterion"]
+    rewritten = rewrite_chain.invoke({"review": review, "weakest_criterion": weakest})["output"]
+    state["draft_review"] = rewritten.strip()
     state["round"] += 1
     return state

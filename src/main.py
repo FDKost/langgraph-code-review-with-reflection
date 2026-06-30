@@ -27,12 +27,14 @@ def review(
     typer.echo("\n=== Draft Review ===")
     typer.echo(final_state.get("draft_review", "No draft review."))
     typer.echo("\n=== Reflection ===")
-    reflection = final_state.get("reflection", {})
-    for key, value in reflection.items():
-        typer.echo(f"{key}: {value}")
-    if "rewritten_review" in final_state:
+    for key in ["pep8", "type_hints", "edge_cases", "naming"]:
+        score = final_state["criteria_scores"].get(key, "N/A")
+        typer.echo(f"{key}: {score}")
+    typer.echo(f"weakest_criterion: {final_state.get('weakest_criterion', 'N/A')}")
+    typer.echo(f"verdict: {final_state.get('verdict', 'N/A')}")
+    if final_state.get("round", 0) > 1:
         typer.echo("\n=== Rewritten Review ===")
-        typer.echo(final_state["rewritten_review"])
+        typer.echo(final_state["draft_review"])
     else:
         typer.echo("\nNo rewriting was necessary.")
 
