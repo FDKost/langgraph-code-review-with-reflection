@@ -1,2 +1,3 @@
-from .graph import CodeReviewState, build_graph
-__all__ = ["CodeReviewState", "build_graph"]
+"""Public API for the code review package."""
+from .graph import CodeReviewState, CodeReviewGraph, build_graph
+from .cli import app

@@ -194,6 +194,43 @@ def build_graph() -> StateGraph[CodeReviewState]:
     return graph
 
 # --------------------------------------------------------------------------- #
+# Wrapper class for tests and convenience
+# --------------------------------------------------------------------------- #
+class CodeReviewGraph:
+    """
+    Convenience wrapper around the LangGraph that exposes a simple run method.
+    """
+
+    def __init__(self, max_rounds: int = 2):
+        self.max_rounds = max_rounds
+        self.graph = build_graph()
+
+    def run(self, code: str) -> CodeReviewState:
+        """
+        Run the graph on the provided code snippet.
+
+        Parameters
+        ----------
+        code : str
+            The Python code to review.
+
+        Returns
+        -------
+        CodeReviewState
+            The final state after the graph execution.
+        """
+        state: CodeReviewState = {
+            "code": code,
+            "draft_review": "",
+            "criteria_scores": {},
+            "weakest_criterion": "",
+            "verdict": "",
+            "round": 1,
+            "max_rounds": self.max_rounds,
+        }
+        return self.graph.invoke(state)
+
+# --------------------------------------------------------------------------- #
 # Public API
 # --------------------------------------------------------------------------- #
-__all__ = ["CodeReviewState", "build_graph"]
+__all__ = ["CodeReviewState", "CodeReviewGraph", "build_graph"]
