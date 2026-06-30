@@ -108,7 +108,6 @@ def _weakest_criterion(scores: Dict[str, int]) -> str:
     """
     return min(scores, key=scores.get)
 
-
 # --------------------------------------------------------------------------- #
 # Node implementations
 # --------------------------------------------------------------------------- #
@@ -162,7 +161,6 @@ New draft review:
     state["round"] += 1
     return {"draft_review": state["draft_review"]}
 
-
 # --------------------------------------------------------------------------- #
 # Graph construction
 # --------------------------------------------------------------------------- #
@@ -181,17 +179,19 @@ def build_graph() -> StateGraph[CodeReviewState]:
     graph.add_edge("draft_review", "reflect")
 
     # After reflection, decide next step
-    graph.add_conditional_edges(
-        "reflect",
-        lambda state: "rewrite"
-        if state["verdict"] == "needs_revision" and state["round"] < state["max_rounds"]
-        else END,
-    )
+    def decide_next(state: CodeReviewState):
+        verdict = state.get("verdict", "")
+        round_num = state.get("round", 1)
+        max_rounds = state.get("max_rounds", 2)
+        if verdict == "needs_revision" and round_num < max_rounds:
+            return "rewrite"
+        return END
+
+    graph.add_conditional_edges("reflect", decide_next)
 
     graph.add_edge("rewrite", "reflect")
 
     return graph
-
 
 # --------------------------------------------------------------------------- #
 # Public API
