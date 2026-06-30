@@ -6,7 +6,7 @@ The workflow:
 1. **Draft Review** – An LLM generates an initial review of the supplied code.  
 2. **Reflect** – The LLM scores the review on four criteria (PEP8, type hints, edge cases, naming).  
 3. **Rewrite** – If the review is not satisfactory, the LLM rewrites the weakest part of the review.  
-4. The process repeats until the review passes or the maximum number of rounds is reached.
+4. **Loop** – The process repeats until the review passes or the maximum number of rounds is reached.
 
 ## Features
 

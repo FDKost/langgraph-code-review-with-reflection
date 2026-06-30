@@ -72,7 +72,6 @@ def reflect(state: CodeReviewState) -> CodeReviewState:
     if not review:
         raise ValueError("No review to reflect on.")
     reflection = reflect_chain.run({"review": review})
-    # reflection is a dict from parser
     state["reflection"] = reflection
     return state
 

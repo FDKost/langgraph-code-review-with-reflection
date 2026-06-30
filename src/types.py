@@ -1,13 +1,12 @@
-from typing import TypedDict, Dict, Any
+from typing import TypedDict, Optional, Dict, Any
 
 class CodeReviewState(TypedDict, total=False):
     """
-    TypedDict representing the state of the code review process.
-    All fields are optional to allow partial updates during the graph execution.
+    State dictionary used throughout the LangGraph workflow.
     """
     code: str
     draft_review: str
-    rewritten_review: str
     reflection: Dict[str, Any]
+    rewritten_review: str
     round: int
     max_rounds: int
