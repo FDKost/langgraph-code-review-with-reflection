@@ -1,4 +1,4 @@
-from typing import TypedDict, Dict
+from typing import TypedDict, Dict, Any
 import os
 
 from langchain_openai import ChatOpenAI
@@ -23,7 +23,6 @@ llm = ChatOpenAI(
     model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
 )
 
-# Node 1: Draft review
 def draft_review(state: CodeReviewState) -> CodeReviewState:
     # Ensure max_rounds defaults to 2 if not provided
     if state.get("max_rounds") is None:
@@ -39,9 +38,9 @@ Your review should be in plain text, each point starting with a dash.
 """
     response = llm.invoke(prompt)
     state["draft_review"] = response.content.strip()
+    state["round"] = 0
     return state
 
-# Node 2: Reflect
 def reflect(state: CodeReviewState) -> CodeReviewState:
     prompt = f"""
 You are an automated code review critic. Evaluate the draft review below on four criteria (PEP8, type hints, edge cases, naming). Assign each a score from 0 to 10 (integer). Identify the weakest criterion and set verdict to 'ok' if all scores >=7, otherwise 'needs_revision'.
@@ -64,7 +63,6 @@ Respond in JSON with keys: pep8, type_hints, edge_cases, naming, weakest_criteri
     state["verdict"] = data["verdict"]
     return state
 
-# Node 3: Rewrite
 def rewrite(state: CodeReviewState) -> CodeReviewState:
     prompt = f"""
 You are a senior software engineer. The draft review below has been flagged as needing revision, specifically the section on '{state['weakest_criterion']}'. Rewrite or strengthen that part of the review to improve it.
@@ -79,7 +77,6 @@ Provide only the updated review (no explanations). Ensure the review still conta
     state["round"] += 1
     return state
 
-# Build the graph
 def build_graph() -> StateGraph:
     graph = StateGraph(CodeReviewState)
 

@@ -1,6 +1,6 @@
 # LangGraph Code Review with Reflection
 
-This repository demonstrates a LangGraph workflow that performs automated code reviews, evaluates the quality of those reviews against four criteria, and rewrites them if necessary.
+This repository demonstrates a **LangGraph** workflow that performs automated code reviews, evaluates the quality of those reviews against four criteria, and rewrites them if necessary.
 
 ## Requirements
 

@@ -18,7 +18,7 @@ def sort_numbers(nums):
         "criteria_scores": {},
         "weakest_criterion": "",
         "verdict": "",
-        "round": 1,
+        "round": 0,  # will be set by draft node
         # max_rounds intentionally omitted to test default
     }
 
