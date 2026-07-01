@@ -41,23 +41,20 @@ python -m code_review.cli
 The CLI will output:
 
 ```
-Initial draft review:
+Final review:
 • Point 1
 • Point 2
 • Point 3
 
 Verdict: needs_revision
 
-Rewritten review:
-• Improved point 1
-• Improved point 2
-• Improved point 3
-
 Scores:
   pep8: 5
   type_hints: 6
   edge_cases: 4
   naming: 7
+
+Weakest criterion: edge_cases
 ```
 
 You can also feed your own code snippet by passing it as an argument:
@@ -85,6 +82,20 @@ tests/
 .env.example
 requirements.txt
 ```
+
+## State Fields
+
+The `CodeReviewState` TypedDict contains the following fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `code` | `str` | The source code to be reviewed. |
+| `draft_review` | `str` | The current draft review text. |
+| `criteria_scores` | `dict[str, int]` | Scores for each review criterion. |
+| `weakest_criterion` | `str` | The criterion with the lowest score (used for rewriting). |
+| `verdict` | `str` | The overall verdict of the review: `"ok"` or `"needs_revision"`. |
+| `round` | `int` | The current round number (starting at 1). |
+| `max_rounds` | `int` | The maximum number of rewrite attempts allowed. |
 
 ## Extending the Agent
 

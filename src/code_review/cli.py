@@ -42,21 +42,26 @@ def run(
     final_state = graph.invoke(state)
 
     # Display results
-    typer.echo("\nInitial draft review:")
+    typer.echo("\nFinal review:")
     typer.echo(final_state["draft_review"])
     typer.echo(f"\nVerdict: {final_state['verdict']}")
 
     if final_state["verdict"] == "ok":
         typer.echo("\nReview accepted. No further action needed.")
     else:
-        typer.echo("\nRewritten review:")
-        typer.echo(final_state["draft_review"])
+        typer.echo("\nReview needs revision. Rewritten review shown above.")
 
     # Optionally display scores
     if final_state["criteria_scores"]:
         typer.echo("\nScores:")
         for k, v in final_state["criteria_scores"].items():
             typer.echo(f"  {k}: {v}")
+
+    if final_state["weakest_criterion"]:
+        typer.echo(f"\nWeakest criterion: {final_state['weakest_criterion']}")
+
+    if final_state["round"] > 1:
+        typer.echo(f"\nTotal rounds performed: {final_state['round']}")
 
 
 if __name__ == "__main__":
