@@ -26,7 +26,7 @@ llm = ChatOpenAI(
 # Node 1: Draft review
 def draft_review(state: CodeReviewState) -> CodeReviewState:
     # Ensure max_rounds defaults to 2 if not provided
-    if "max_rounds" not in state or state["max_rounds"] is None:
+    if state.get("max_rounds") is None:
         state["max_rounds"] = 2
 
     prompt = f"""
@@ -90,7 +90,7 @@ def build_graph() -> StateGraph:
     # Entry point
     graph.set_entry_point("draft")
 
-    # Define transitions from draft to reflect
+    # Transition from draft to reflect
     graph.add_edge("draft", "reflect")
 
     # Conditional transition after reflect
