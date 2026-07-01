@@ -1,2 +1,2 @@
-# Package initialization for code_review
-__all__ = ["graph", "cli"]
+# Package initialization for code_review module
+__all__ = ["cli", "graph"]
