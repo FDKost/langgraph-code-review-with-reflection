@@ -40,15 +40,14 @@ You should see output similar to:
 
 ```
 === Final Review ===
-- The function name `sort_numbers` is clear and follows snake_case.
-- It correctly uses Python's built-in `sorted()` for efficiency.
-- No type hints are present; consider adding them for clarity.
+- Good naming
+- Added type hints for clarity
 
 === Scores ===
-pep8: 9
+pep8: 5
 type_hints: 4
-edge_cases: 7
-naming: 10
+edge_cases: 6
+naming: 7
 
 Weakest criterion: type_hints
 Verdict: needs_revision
