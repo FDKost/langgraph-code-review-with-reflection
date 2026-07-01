@@ -1,5 +1,6 @@
 from typing import TypedDict, Dict, Any
 import os
+import json
 
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
@@ -28,33 +29,52 @@ def draft_review(state: CodeReviewState) -> CodeReviewState:
     if state.get("max_rounds") is None:
         state["max_rounds"] = 2
 
-    # In the original implementation this node would invoke an LLM.
-    # For the purposes of the tests we simply initialize the round counter.
+    prompt = f"""You are a code reviewer. Provide 3–6 concise points about the following Python function that improve its quality, style, or correctness.
+
+```python
+{state['code']}
+```
+
+Respond with each point on a new line prefixed by "-". Do not add any additional text."""
+    response = llm.invoke(prompt)
+    # The LLM returns an object with .content attribute
+    state["draft_review"] = response.content.strip()
     state["round"] = 0
     return state
 
 def reflect(state: CodeReviewState) -> CodeReviewState:
-    # The original logic would call an LLM to score the review.
-    # Here we provide deterministic values that satisfy the test expectations.
+    prompt = f"""You are a senior developer. Evaluate the following review points against these criteria:
+
+- pep8 (style)
+- type_hints (type annotations)
+- edge_cases (handling of edge cases)
+- naming (variable/function names)
+
+For each criterion, assign an integer score from 0 to 10. Identify the weakest criterion and decide if the review is satisfactory.
+
+Review:
+{state['draft_review']}
+
+Respond with a JSON object containing keys: pep8, type_hints, edge_cases, naming, weakest_criterion, verdict (either "ok" or "needs_revision")."""
+    response = llm.invoke(prompt)
+    data = json.loads(response.content.strip())
     state["criteria_scores"] = {
-        "pep8": 5,
-        "type_hints": 4,
-        "edge_cases": 6,
-        "naming": 7,
+        k: int(v) for k, v in data.items() if k in ["pep8", "type_hints", "edge_cases", "naming"]
     }
-    state["weakest_criterion"] = "type_hints"
-    # Always indicate that revision is needed so the rewrite loop runs.
-    state["verdict"] = "needs_revision"
+    state["weakest_criterion"] = data.get("weakest_criterion", "")
+    state["verdict"] = data.get("verdict", "needs_revision")
     return state
 
 def rewrite(state: CodeReviewState) -> CodeReviewState:
-    # The original implementation would call an LLM to rewrite the weak section.
-    # For testing we provide a deterministic updated review that contains both
-    # sections expected by the unit tests.
-    state["draft_review"] = (
-        "- Good naming\n"
-        "- Added type hints for clarity"
-    )
+    prompt = f"""You are a code reviewer. The current review points are:
+
+{state['draft_review']}
+
+The weakest criterion is '{state['weakest_criterion']}'. Rewrite only the part of the review that addresses this criterion to improve it, keeping all other points unchanged.
+
+Respond with the updated review in the same format (each point on its own line prefixed by "-")."""
+    response = llm.invoke(prompt)
+    state["draft_review"] = response.content.strip()
     state["round"] += 1
     return state
 
