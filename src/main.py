@@ -19,7 +19,7 @@ def sort_numbers(nums):
         "weakest_criterion": "",
         "verdict": "",
         "round": 1,
-        "max_rounds": 2,  # default
+        # max_rounds intentionally omitted to test default
     }
 
     final_state = graph.invoke(initial_state)

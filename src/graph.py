@@ -25,6 +25,10 @@ llm = ChatOpenAI(
 
 # Node 1: Draft review
 def draft_review(state: CodeReviewState) -> CodeReviewState:
+    # Ensure max_rounds defaults to 2 if not provided
+    if "max_rounds" not in state or state["max_rounds"] is None:
+        state["max_rounds"] = 2
+
     prompt = f"""
 You are a senior software engineer. Read the following Python function and write a concise code review with 3–6 bullet points. Focus on style, correctness, edge cases, and naming.
 
@@ -86,24 +90,19 @@ def build_graph() -> StateGraph:
     # Entry point
     graph.set_entry_point("draft")
 
-    # Define transitions
-    graph.add_conditional_edges(
-        "draft",
-        lambda state: "reflect",
-        {"reflect": "reflect"},
-    )
-    graph.add_conditional_edges(
-        "reflect",
-        lambda state: (
-            ("rewrite" if state["verdict"] == "needs_revision"
-             and state["round"] < state["max_rounds"]
-             else END)
-        ),
-        {
-            "rewrite": "rewrite",
-            END: END,
-        },
-    )
+    # Define transitions from draft to reflect
+    graph.add_edge("draft", "reflect")
+
+    # Conditional transition after reflect
+    def decide_next(state: CodeReviewState):
+        if state["verdict"] == "needs_revision" and state["round"] < state["max_rounds"]:
+            return "rewrite"
+        else:
+            return END
+
+    graph.add_conditional_edges("reflect", decide_next, {"rewrite": "rewrite", END: END})
+
+    # After rewrite go back to reflect
     graph.add_edge("rewrite", "reflect")
 
     return graph
