@@ -1,6 +1,6 @@
-from typing import TypedDict, Dict, Any
 import os
 import json
+from typing import TypedDict, Dict
 
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
@@ -37,7 +37,6 @@ def draft_review(state: CodeReviewState) -> CodeReviewState:
 
 Respond with each point on a new line prefixed by "-". Do not add any additional text."""
     response = llm.invoke(prompt)
-    # The LLM returns an object with .content attribute
     state["draft_review"] = response.content.strip()
     state["round"] = 0
     return state

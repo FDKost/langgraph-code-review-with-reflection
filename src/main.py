@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from graph import graph, CodeReviewState
+from src.graph import graph, CodeReviewState
 
 load_dotenv()
 

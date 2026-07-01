@@ -40,8 +40,9 @@ You should see output similar to:
 
 ```
 === Final Review ===
-- Good naming
-- Added type hints for clarity
+- Ensure type hints are added for function parameters.
+- Use list comprehension for clarity.
+- Consider edge cases like empty input.
 
 === Scores ===
 pep8: 5
