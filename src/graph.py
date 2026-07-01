@@ -26,7 +26,7 @@ llm = ChatOpenAI(
 
 def draft_review(state: CodeReviewState) -> CodeReviewState:
     # Ensure max_rounds defaults to 2 if not provided
-    if state.get("max_rounds") is None:
+    if "max_rounds" not in state or state.get("max_rounds") is None:
         state["max_rounds"] = 2
 
     prompt = f"""You are a code reviewer. Provide 3–6 concise points about the following Python function that improve its quality, style, or correctness.
