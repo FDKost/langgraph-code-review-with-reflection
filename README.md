@@ -5,9 +5,9 @@ This repository demonstrates a LangGraph workflow that performs automated code r
 ## Requirements
 
 ```text
-langgraph
-langchain-openai
-python-dotenv
+langgraph==0.1.4
+langchain-openai==0.2.3
+python-dotenv==1.0.1
 ```
 
 > **Note:** If you prefer to use Ollama instead of OpenAI, replace `langchain-openai` with `langchain-ollama` in the requirements and adjust the model configuration accordingly.
